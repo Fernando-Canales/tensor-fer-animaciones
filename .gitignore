@@ -1,0 +1,17 @@
+# Entornos virtuales
+.venv/
+env/
+venv/
+
+# Manim (Videos, imágenes e intermedios de LaTeX)
+media/
+.manim.cfg
+
+# Python
+__pycache__/
+*.pyc
+
+# Caché del sistema y editores
+.DS_Store
+.vscode/
+.idea/
