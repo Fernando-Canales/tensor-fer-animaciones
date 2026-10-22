@@ -14,7 +14,7 @@ Y otra vez. Cuatro veces más puntos, y la línea sigue sin cruzarse ni levantar
 Cada paso la hace más larga y más densa… y su longitud se duplica cada vez.
 
 0:38 – Revelación
-Si lo repetimos para siempre, la longitud crece sin límite: es infinita. Y la línea pasa por todos los puntos del cuadrado.
+Si repetimos este proceso para siempre, la longitud de la línea crece sin límite: es infinita. Y la línea pasa por todos los puntos del cuadrado.
 
 0:44 – Nombre
 Esta figura es un fractal muy famoso llamado 'la curva de Hilbert'.
