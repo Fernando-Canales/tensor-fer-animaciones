@@ -220,7 +220,7 @@ class DragonShort(Scene):
         # =============================================================
         # 3. PRIMEROS PLIEGUES, DESPACIO
         # =============================================================
-        self.play(*swap_caption("Dóblala una vez\ny desdóblala:\nun ángulo recto"),
+        self.play(*swap_caption("Dobla y desdobla:\nun ángulo recto"),
                   lv.animate.set_value(1.0), run_time=2.8, rate_func=linear)
         self.wait(0.8)
         self.play(*swap_caption("Dóblala otra vez…"),
@@ -242,7 +242,7 @@ class DragonShort(Scene):
         # =============================================================
         # 5. NOMBRE
         # =============================================================
-        self.play(*swap_caption("Esta es la\ncurva del dragón", size=54, color=COLOR_RESULT),
+        self.play(*swap_caption("Esta es la\ncurva del dragón", size=44, color=COLOR_RESULT),
                   run_time=1.2)
         self.wait(2.8)
 
