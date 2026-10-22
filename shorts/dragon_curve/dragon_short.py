@@ -220,7 +220,7 @@ class DragonShort(Scene):
         # =============================================================
         # 3. PRIMEROS PLIEGUES, DESPACIO
         # =============================================================
-        self.play(*swap_caption("Dobla y desdobla:\nun ángulo recto"),
+        self.play(*swap_caption("Dobla la tira:\nun ángulo recto"),
                   lv.animate.set_value(1.0), run_time=2.8, rate_func=linear)
         self.wait(0.8)
         self.play(*swap_caption("Dóblala otra vez…"),
@@ -249,7 +249,7 @@ class DragonShort(Scene):
         # =============================================================
         # 6. CUATRO DRAGONES
         # =============================================================
-        self.play(*swap_caption("Cuatro dragones\nencajan sin solaparse", size=52),
+        self.play(*swap_caption("Cuatro dragones\nencajan sin solaparse", size=44),
                   FadeOut(counter),
                   cam.animate.set_value(1.0), op4.animate.set_value(1.0),
                   run_time=4.0, rate_func=smooth)
