@@ -6,6 +6,9 @@ venv/
 # Manim (Videos, imágenes e intermedios de LaTeX)
 media/
 .manim.cfg
+*.mp4
+*.wav
+*.aup3
 
 # Python
 __pycache__/

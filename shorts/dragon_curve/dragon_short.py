@@ -249,7 +249,7 @@ class DragonShort(Scene):
         # =============================================================
         # 6. CUATRO DRAGONES
         # =============================================================
-        self.play(*swap_caption("Cuatro dragones\nencajan sin solaparse", size=44),
+        self.play(*swap_caption("Cuatro dragones\nencajan sin solaparse", size=36),
                   FadeOut(counter),
                   cam.animate.set_value(1.0), op4.animate.set_value(1.0),
                   run_time=4.0, rate_func=smooth)
