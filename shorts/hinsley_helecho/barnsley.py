@@ -98,6 +98,7 @@ class BarnsleyShort(Scene):
         leaf_green = ValueTracker(0.0)             # la hoja pasa de azul a verde
         zt = ValueTracker(0.0)                     # zoom hacia la hoja (0 a 1)
         fade_tracker = ValueTracker(0.0)           # 0: negro · 1: visible
+        rule_gain = [ValueTracker(1.0) for _ in range(4)]   # brillo de cada parte (por regla)
 
         def update_cloud(m):
             n = max(1, int(tracker.get_value()))
@@ -105,7 +106,9 @@ class BarnsleyShort(Scene):
             mo, lo, lg = main_op.get_value(), leaf_op.get_value(), leaf_green.get_value()
             P_parts, C_parts = [], []
             if mo * fd > 0.002:
+                gains = np.array([r.get_value() for r in rule_gain])
                 col = (1 - g) * rule_rgb[idx[:n]] + g * GREEN_RGB
+                col = col * gains[idx[:n]][:, None]
                 P_parts.append(pts[1:1 + n])
                 C_parts.append(col * (mo * fd))
             if lo * fd > 0.002:
@@ -176,10 +179,32 @@ class BarnsleyShort(Scene):
         fit_width(chips, 0.95)
         chips.move_to(DOWN * 3.5)
 
-        self.play(*swap_caption("Cuatro reglas,\ncada una con su probabilidad"),
-                  LaggedStart(*[FadeIn(c, shift=UP * 0.2) for c in chips], lag_ratio=0.25),
-                  run_time=2.2)
-        self.wait(1.6)
+        # El helecho terminado, con cada parte del color de su regla.
+        # Cada regla se ilumina cuando aparece su círculo: así se ve qué parte dibuja.
+        for r in rule_gain:
+            r.set_value(0.12)
+        tracker.set_value(N_TOTAL)
+        main_op.set_value(1.0)
+        gmix.set_value(0.0)
+        fade_tracker.set_value(0.0)
+        update_cloud(cloud)
+        self.play(fade_tracker.animate.set_value(1.0),
+                  *swap_caption("Cada regla dibuja\nuna parte del helecho"),
+                  run_time=1.4)
+        for j in range(4):
+            anims = [FadeIn(chips[j], shift=UP * 0.2), rule_gain[j].animate.set_value(1.0)]
+            if j > 0:
+                anims.append(rule_gain[j - 1].animate.set_value(0.35))
+            self.play(*anims, run_time=0.9)
+            self.wait(1.1)
+        self.play(*[r.animate.set_value(1.0) for r in rule_gain],
+                  *swap_caption("Cuatro reglas,\ncada una con su probabilidad"), run_time=1.0)
+        self.wait(1.4)
+        self.play(fade_tracker.animate.set_value(0.0), run_time=0.9)
+        tracker.set_value(1)                       # el helecho vuelve a empezar de cero
+        main_op.set_value(0.0)
+        fade_tracker.set_value(1.0)
+        update_cloud(cloud)
 
         # =============================================================
         # 3. LOS PRIMEROS PASOS, DESPACIO
@@ -235,7 +260,7 @@ class BarnsleyShort(Scene):
         # =============================================================
         # 5. REVELACIÓN: helecho de Barnsley, todo verde
         # =============================================================
-        self.play(*swap_caption("Helecho de\nBarnsley", size=48, color=COLOR_RESULT),
+        self.play(*swap_caption("Helecho de\nBarnsley", size=38, color=COLOR_RESULT),
                   gmix.animate.set_value(1.0),
                   FadeOut(VGroup(counter, counter_label)), run_time=1.6)
         self.wait(1.8)
