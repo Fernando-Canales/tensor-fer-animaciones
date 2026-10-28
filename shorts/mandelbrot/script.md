@@ -2,21 +2,18 @@
 
 ¿Cómo se crea el fractal más hermoso del mundo?
 
-Todo empieza con una regla muy simple: partimos de z igual a cero, y repetimos z al cuadrado más c.
-
-Tanto z como c son números complejos
+Todo empieza con una regla muy simple: partimos de un cierto número y luego obtenemos los siguientes usando esta fórmula de aquí.
 
 Veamos cómo funciona esto en un caso en particular:
-c igual a menos cero punto cuatro más cero punto cuatro i. Partimos de cero. El primer paso nos lleva a c; el siguiente, a otro punto… y así, decenas de veces. En este caso el punto da vueltas y se queda cerca del origen: atrapado para siempre.
+Usando este valor de 'c' primero partimos de cero. El primer paso nos lleva a c; el siguiente, a otro punto… y así, decenas de veces. En este caso el punto da vueltas y se queda cerca del origen: atrapado para siempre.
 
-Ahora, c igual a cero punto cuatro más cero punto cinco i. Esta vez los puntos se alejan, hasta cruzar esta circunferencia de radio dos. A partir de ahí, ya no vuelven: la distancia explota hacia el infinito.
+Ahora, en este otro caso, vemos cómo los números parece que siguen el patrón del caso anterior, pero en algún momento se empiezan a alejar, hasta cruzar esta circunferencia de radio dos. A partir de ahí, ya no vuelven: la distancia explota hacia el infinito.
 
-Como podrás pensar, cada punto del plano tiene su propia historia. Lo pintamos de negro si se queda atrapado, y de color si se escapa.
+Como podrás pensar, cada punto del plano complejo tiene su propia historia cuando le aplicamos la fórmula del principio. Si un punto se queda atrapado, lo pintamos de negro, y si se escapa, de color azul.
 
-Hagamos lo mismo con muchos valores de c. Con más y más puntos…
+Ahora, hagamos lo mismo con muchos valores de c. Con más y más puntos vemos cómo empieza a aparecer una figura muy impresionante
 
-Un punto se vuelve negro si se queda atrapado. 
-Un punto se vuelve de color si se escapa.
+En esta figura el color negro está formado por todos los números que quedaron atrapados y el color azul de todos los que han escapado.
 
 Esto es el famosísimo conjunto de Mandelbrot.
 
