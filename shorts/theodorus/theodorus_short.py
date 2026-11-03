@@ -29,6 +29,13 @@ LABEL_OFF = 0.32           # separación de la etiqueta (en unidades de pantalla
 UP_SHIFT = 0.02            # ligero desplazamiento hacia arriba (zona segura inferior)
 
 
+# Triángulo 1: velocidad de dibujo normal (la hipotenusa √2 puede tardar un poco)
+T1 = dict(leg_a=1.4, leg_b=1.4, ang=0.7, hyp=1.6, fill=1.0)
+# Pausa (s) DESPUÉS de formarse cada uno de los tres primeros triángulos: tiempo para explicar
+# lo que se acaba de construir antes de que empiece el siguiente
+PAUSE = {1: 6.0, 2: 5.0, 3: 5.0}
+
+
 def theodorus_points(n=N_END):
     """z[0] = O, z[1] = 1; cada nuevo punto está a distancia 1 del anterior y a 90° de la
     hipotenusa previa:  z[k+1] = z[k] + i·z[k]/|z[k]|   ->   |z[k]| = sqrt(k).
@@ -136,15 +143,15 @@ class TheodorusShort(MovingCameraScene):
         la = make_label("1", (P(0) + P(1)) / 2, (0, -1, 0))
         lb = make_label("1", (P(1) + P(2)) / 2, (1, 0, 0))
         ones += [la, lb]
-        self.play(Create(leg_a), FadeIn(la), run_time=1.4)
-        self.play(Create(leg_b), FadeIn(lb), run_time=1.4)
-        self.play(FadeIn(right_angle(1)), run_time=0.7)
+        self.play(Create(leg_a), FadeIn(la), run_time=T1["leg_a"])
+        self.play(Create(leg_b), FadeIn(lb), run_time=T1["leg_b"])
+        self.play(FadeIn(right_angle(1)), run_time=T1["ang"])
         l2 = make_label(r"\sqrt{2}", P(2), P(2))
         polys.append(tri_poly(1))
         labels.append(l2)
-        self.play(Create(hyp), FadeIn(l2), run_time=1.6)
-        self.play(FadeIn(polys[0]), run_time=1.0)
-        self.wait(0.5)
+        self.play(Create(hyp), FadeIn(l2), run_time=T1["hyp"])
+        self.play(FadeIn(polys[0]), run_time=T1["fill"])
+        self.wait(PAUSE[1])                                   # pausa larga antes del triángulo 2
 
         # =============================================================
         # TRIÁNGULOS 2..16: nuevo cateto de longitud 1, perpendicular a la hipotenusa anterior (lento)
@@ -158,12 +165,14 @@ class TheodorusShort(MovingCameraScene):
             lab = make_label(r"\sqrt{%d}" % (k + 1), P(k + 1), P(k + 1))
             labels.append(lab)
             fw, c = camera_target(z, k)
-            anims = [Create(hyp), FadeIn(poly), FadeIn(lab),
-                     cam.animate.set(width=fw).move_to(np.array([c.real, c.imag, 0.0]))]
+            cam_move = cam.animate.set(width=fw).move_to(np.array([c.real, c.imag, 0.0]))
+            anims = [Create(hyp), FadeIn(poly), FadeIn(lab), cam_move]
             if k == 3:
-                anims += [FadeOut(la), FadeOut(lb)]     # los "1" iniciales ya cumplieron su función
+                anims += [FadeOut(m) for m in ones]         # los "1" iniciales ya cumplieron su función
             self.play(Create(leg), FadeIn(right_angle(k)), run_time=a)
             self.play(*anims, run_time=b)
+            if k in PAUSE:                                  # triángulos 2 y 3: pausa larga para explicar
+                self.wait(PAUSE[k])
         self.wait(0.8)
 
         # =============================================================
