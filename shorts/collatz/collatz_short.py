@@ -24,8 +24,11 @@ if PORTRAIT:
 EXAMPLES = (6, 5)                  # 6: par -> impar ...   5: impar -> pares hasta 1
 BIG = 27                           # el número "granizo" (111 pasos, máximo 9232)
 
-# Ritmo de los ejemplos: un número nuevo cada ARROW_T + NUM_T + GAP_T = 2.2 s (>= 2 s)
-ARROW_T, NUM_T, GAP_T = 1.0, 0.5, 0.7
+# Ritmo de los ejemplos (6 y 5): un número nuevo cada 4.5 s, para poder explicar cómo se obtiene cada uno.
+# Cada paso tiene cuatro tiempos: 1) se marca el número y aparece la regla que le toca (par: ÷2 / impar: ×3+1),
+# 2) pausa, 3) se dibuja la flecha y aparece el número nuevo, 4) pausa antes del siguiente.
+RULE_T, RULE_WAIT, ARROW_T, NUM_T, GAP_T = 0.9, 1.0, 0.8, 0.8, 1.0
+STEP_PERIOD = RULE_T + RULE_WAIT + ARROW_T + NUM_T + GAP_T     # = 4.5 s
 
 # Columna del camino (arriba -> abajo)
 COL_Y0, COL_DY = 3.45, 0.85
@@ -153,7 +156,11 @@ class CollatzShort(Scene):
                 nb = num(b, 64).move_to(col(i + 1))
                 nodes.append(nb)
                 items += [arr, lab, nb]
-                self.play(Create(arr), FadeIn(lab), nodes[i].animate.set_color(rule_color(a)), run_time=ARROW_T)
+                # 1) el número actual se colorea y aparece la regla que le toca
+                self.play(nodes[i].animate.set_color(rule_color(a)), FadeIn(lab), run_time=RULE_T)
+                self.wait(RULE_WAIT)
+                # 2) la flecha lleva al número nuevo
+                self.play(Create(arr), run_time=ARROW_T)
                 self.play(FadeIn(nb, shift=0.15 * DOWN), run_time=NUM_T)
                 self.wait(GAP_T)
             return items, chain
@@ -269,11 +276,12 @@ class CollatzShort(Scene):
                     grp.append(vm)
             by_depth.append(grp)
 
-        title = fit(Text("Conjetura\nde Collatz", font_size=84, line_spacing=0.9, color=WHITE).set_z_index(10), 5.2)
-        title.move_to(np.array([0, 2.3, 0]))
+        # Los textos se colocan uno debajo del otro (next_to), así nunca se empalman con el título.
+        title = fit(Text("Conjetura\nde Collatz", font_size=84, line_spacing=0.9, color=WHITE).set_z_index(10), 4.8)
+        title.move_to(np.array([0, 3.1, 0]))
         statement = fit(Text("Todo número positivo\nacaba llegando a 1", font_size=50, line_spacing=0.95,
                              color=WHITE).set_z_index(10), 5.2)
-        statement.move_to(np.array([0, -0.6, 0]))
+        statement.next_to(title, DOWN, buff=0.9)
         grow = LaggedStart(*[AnimationGroup(*[Create(m) for m in grp]) for grp in by_depth],
                            lag_ratio=0.35, run_time=9.0)
         self.play(FadeIn(title, shift=0.3 * UP, run_time=1.4), grow,
@@ -283,11 +291,11 @@ class CollatzShort(Scene):
             self.play(FadeOut(statement), run_time=0.8)
             comp_a = Text("Comprobada hasta\nmás de", font_size=40, line_spacing=0.9, color=WHITE).set_z_index(10)
             comp_b = MathTex(r"10^{20}", font_size=110, color=C_ODD).set_z_index(10)
-            comp = VGroup(comp_a, comp_b).arrange(DOWN, buff=0.3).move_to(np.array([0, 0.0, 0]))
+            comp = VGroup(comp_a, comp_b).arrange(DOWN, buff=0.3).next_to(title, DOWN, buff=0.7)
             self.play(FadeIn(comp, shift=0.2 * UP), run_time=1.2)
             self.wait(3.0)
-            dem = fit(Text("Demostrada:\nnadie todavía", font_size=48, line_spacing=0.9,
-                           color=C_EVEN).set_z_index(10), 5.2).move_to(np.array([0, -2.5, 0]))
+            dem = fit(Text("Nadie la ha demostrado", font_size=48, line_spacing=0.9,
+                           color=C_EVEN).set_z_index(10), 5.2).next_to(comp, DOWN, buff=0.6)
             self.play(FadeIn(dem, shift=0.2 * UP), run_time=1.2)
             self.wait(3.5)
         else:
