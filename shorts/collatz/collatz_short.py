@@ -2,11 +2,12 @@ from manim import *
 import numpy as np
 
 # ---------------------------------------------------------------
-# CONJETURA DE COLLATZ: empieza directamente con "Toma un número" (el 6)
+# CONJETURA DE COLLATZ: empieza directamente con "Toma un número"
 # FORMATO: cuadro vertical 9:16 (1080x1920)
 # Render: manim -qh --fps 60 collatz_short.py CollatzShort
-# Escenas: 1) reglas y el camino de 6 hasta 1  2) la montaña rusa del 27
-#          3) el árbol de todos los caminos hacia 1  4) la conjetura  5) logo
+# Escenas: 1) ejemplo del 6 (con el ciclo 4-2-1)   2) ejemplo del 5
+#          3) el 27: la montaña rusa               4) la conjetura, con el árbol translúcido de fondo
+#          5) logo
 # ---------------------------------------------------------------
 PORTRAIT = True
 if PORTRAIT:
@@ -20,14 +21,14 @@ if PORTRAIT:
 # MATEMÁTICAS Y DISPOSICIÓN (numpy puro; se puede probar sin Manim)
 # ===============================================================
 # BEGIN-GEOM
-START = 6                          # número con el que se explican las reglas
+EXAMPLES = (6, 5)                  # 6: par -> impar ...   5: impar -> pares hasta 1
 BIG = 27                           # el número "granizo" (111 pasos, máximo 9232)
 
-# Pausas (s) tras formarse cada uno de los tres primeros pasos del camino de 6: tiempo para explicar
-PAUSE_CHAIN = {0: 1.8, 1: 1.8, 2: 1.4}
+# Ritmo de los ejemplos: un número nuevo cada ARROW_T + NUM_T + GAP_T = 2.2 s (>= 2 s)
+ARROW_T, NUM_T, GAP_T = 1.0, 0.5, 0.7
 
-# Columna del camino de 6 (arriba -> abajo)
-COL_Y0, COL_DY = 3.2, 0.85
+# Columna del camino (arriba -> abajo)
+COL_Y0, COL_DY = 3.45, 0.85
 
 # Gráfica del 27: pasos hacia abajo (eje vertical), valor hacia la derecha
 X_AX, X_W = -2.5, 5.0
@@ -36,6 +37,9 @@ Y_TOP, Y_BOT = 3.6, -3.4
 # Árbol de Collatz: 24 niveles, giro de 5° por cada ÷2 (inverso) y -10° por cada paso "×3+1" (inverso)
 TREE_D, TREE_AE, TREE_AO = 24, 5.0, 10.0
 TREE_W, TREE_H, TREE_CX, TREE_YBOT = 5.4, 6.9, 0.0, -3.1
+TREE_OPACITY = 0.22                # el árbol de fondo es translúcido
+
+SHOW_FACTS = True                  # tras el enunciado: "Comprobada hasta más de 10^20 / Demostrada: nadie todavía"
 
 
 def collatz_next(n):
@@ -80,7 +84,7 @@ def build_tree(D=TREE_D, aE=TREE_AE, aO=TREE_AO):
 
 
 def tree_fit(pos):
-    """Escala y desplazamiento para que el árbol quepa en TREE_W x TREE_H con la raíz abajo."""
+    """Escala y transformación para que el árbol quepa en TREE_W x TREE_H con la raíz abajo."""
     xs = np.array([p[0] for p in pos.values()])
     ys = np.array([p[1] for p in pos.values()])
     s = min(TREE_W / (xs.max() - xs.min()), TREE_H / (ys.max() - ys.min()))
@@ -114,56 +118,71 @@ class CollatzShort(Scene):
         def rule_tex(n):
             return r"\div 2" if n % 2 == 0 else r"\times 3+1"
 
-        # =============================================================
-        # 1. "TOMA UN NÚMERO": el 6 y las dos reglas
-        # =============================================================
+        def fit(mob, maxw=5.2):
+            if mob.width > maxw:
+                mob.scale_to_fit_width(maxw)
+            return mob
+
         col = lambda i: np.array([0.0, COL_Y0 - COL_DY * i, 0.0])
-        chain = trajectory(START)                       # [6, 3, 10, 5, 16, 8, 4, 2, 1]
-        n0 = num(START, 64).scale(3.4).move_to(np.array([0.0, 0.6, 0.0]))
-        self.play(FadeIn(n0, scale=0.6), run_time=1.0)
-        self.wait(1.6)
+        legend = []
 
-        leg_par = MathTex(r"\text{par: }\div 2", font_size=40, color=C_EVEN).move_to(np.array([-1.7, 4.55, 0]))
-        leg_imp = MathTex(r"\text{impar: }\times 3+1", font_size=40, color=C_ODD).move_to(np.array([1.2, 4.55, 0]))
-        self.play(Write(leg_par), run_time=1.2)
-        self.wait(1.2)
-        self.play(Write(leg_imp), run_time=1.2)
-        self.wait(1.4)
+        def run_example(start, first):
+            """Muestra el camino de `start` hasta 1 en columna. Devuelve (lista de mobjects, camino)."""
+            chain = trajectory(start)
+            items = []
+            n0 = num(start, 64).scale(3.4).move_to(np.array([0.0, 0.6, 0.0]))
+            self.play(FadeIn(n0, scale=0.6), run_time=1.0)
+            self.wait(1.6)
+            if first:                                           # las dos reglas, sólo la primera vez
+                leg_par = MathTex(r"\text{par: }\div 2", font_size=40, color=C_EVEN).move_to(np.array([-1.7, 4.55, 0]))
+                leg_imp = MathTex(r"\text{impar: }\times 3+1", font_size=40, color=C_ODD).move_to(np.array([1.2, 4.55, 0]))
+                legend.extend([leg_par, leg_imp])
+                self.play(Write(leg_par), run_time=1.2)
+                self.wait(1.0)
+                self.play(Write(leg_imp), run_time=1.2)
+                self.wait(1.4)
+            self.play(n0.animate.scale(1 / 3.4).move_to(col(0)), run_time=1.2)
+            nodes = [n0]
+            items.append(n0)
+            for i in range(len(chain) - 1):
+                a, b = chain[i], chain[i + 1]
+                arr = Arrow(col(i) + DOWN * 0.3, col(i + 1) + UP * 0.3, buff=0, color=rule_color(a), stroke_width=4,
+                            tip_length=0.12, max_tip_length_to_length_ratio=0.6, max_stroke_width_to_length_ratio=20)
+                lab = MathTex(rule_tex(a), font_size=40, color=rule_color(a)).move_to(
+                    col(i) + DOWN * (COL_DY / 2) + LEFT * 1.05)
+                nb = num(b, 64).move_to(col(i + 1))
+                nodes.append(nb)
+                items += [arr, lab, nb]
+                self.play(Create(arr), FadeIn(lab), nodes[i].animate.set_color(rule_color(a)), run_time=ARROW_T)
+                self.play(FadeIn(nb, shift=0.15 * DOWN), run_time=NUM_T)
+                self.wait(GAP_T)
+            return items, chain
 
-        # el 6 pasa a ser el primer elemento de la columna
-        self.play(n0.animate.scale(1 / 3.4).move_to(col(0)), run_time=1.2)
-
-        nodes = [n0]
-        for i in range(len(chain) - 1):
-            a, b = chain[i], chain[i + 1]
-            slow = i in PAUSE_CHAIN
-            arr = Arrow(col(i) + DOWN * 0.3, col(i + 1) + UP * 0.3, buff=0, color=rule_color(a), stroke_width=4,
-                        tip_length=0.12, max_tip_length_to_length_ratio=0.6, max_stroke_width_to_length_ratio=20)
-            lab = MathTex(rule_tex(a), font_size=40, color=rule_color(a)).move_to(
-                col(i) + DOWN * (COL_DY / 2) + LEFT * 1.05)
-            nb = num(b, 64)
-            nodes.append(nb.move_to(col(i + 1)))
-            self.play(Create(arr), FadeIn(lab), nodes[i].animate.set_color(rule_color(a)),
-                      run_time=1.5 if slow else 1.4)
-            self.play(FadeIn(nb, shift=0.15 * DOWN), run_time=1.5 if slow else 1.4)
-            if slow:
-                self.wait(PAUSE_CHAIN[i])
-
-        # el ciclo 4 -> 2 -> 1 -> 4
+        # =============================================================
+        # 1. "TOMA UN NÚMERO": el 6 (y el ciclo 4 -> 2 -> 1 -> 4)
+        # =============================================================
+        items6, chain6 = run_example(EXAMPLES[0], first=True)
         x_r, x_loop = 0.45, 1.05
-        y1, y4 = col(len(chain) - 1)[1], col(len(chain) - 3)[1]
+        y1, y4 = col(len(chain6) - 1)[1], col(len(chain6) - 3)[1]
         loop = VGroup(Line(np.array([x_r, y1, 0]), np.array([x_loop, y1, 0]), color=C_ODD, stroke_width=4),
                       Line(np.array([x_loop, y1, 0]), np.array([x_loop, y4, 0]), color=C_ODD, stroke_width=4),
                       Arrow(np.array([x_loop, y4, 0]), np.array([x_r, y4, 0]), buff=0, color=C_ODD, stroke_width=4,
                             tip_length=0.15, max_tip_length_to_length_ratio=0.6))
         loop_lab = MathTex(r"\times 3+1", font_size=40, color=C_ODD).move_to(np.array([1.95, (y1 + y4) / 2 + 0.35, 0]))
         loop_txt = Text("ciclo", font_size=34, color=WHITE).move_to(np.array([1.95, (y1 + y4) / 2 - 0.25, 0]))
-        self.play(Create(loop), FadeIn(loop_lab), run_time=3.6)
+        self.play(Create(loop), FadeIn(loop_lab), run_time=1.6)
         self.play(FadeIn(loop_txt), run_time=0.8)
-        self.wait(2.0)
+        self.wait(2.2)
 
         # =============================================================
-        # 2. EL 27: LA MONTAÑA RUSA
+        # 2. EL 5: impar primero, luego todo pares
+        # =============================================================
+        self.play(FadeOut(Group(*items6, loop, loop_lab, loop_txt)), run_time=1.0)
+        items5, chain5 = run_example(EXAMPLES[1], first=False)
+        self.wait(1.6)
+
+        # =============================================================
+        # 3. EL 27: LA MONTAÑA RUSA
         # =============================================================
         self.play(FadeOut(Group(*self.mobjects)), run_time=1.0)
         big = num(BIG, 64).scale(3.4).move_to(np.array([0.0, 0.6, 0.0]))
@@ -224,72 +243,55 @@ class CollatzShort(Scene):
         steps_lab = Text("111 pasos", font_size=38, color=WHITE).move_to(np.array([1.0, Y_BOT, 0]))
         self.play(FadeIn(steps_lab, shift=0.2 * UP), run_time=1.0)
         self.wait(2.5)
-        for m in (trail, dot, lab_now):
+        for m in (trail, dot, lab_now, peak_lab):
             m.clear_updaters()
-        peak_lab.clear_updaters()
         self.play(FadeOut(Group(*self.mobjects)), run_time=1.0)
 
         # =============================================================
-        # 3. EL ÁRBOL: todos los caminos terminan en 1
+        # 4. LA CONJETURA, con el árbol de Collatz translúcido de fondo
         # =============================================================
         pos, layers = build_tree()
         s, T = tree_fit(pos)
-        sw = 2.0
-        grow = []
-        tree_layers = VGroup()
+        by_depth = []
         for segs in layers:
+            grp = []
             for even in (True, False):
-                vm = VMobject(color=C_EVEN if even else C_ODD, stroke_width=sw)
-                first = True
+                vm = VMobject(color=C_EVEN if even else C_ODD, stroke_width=2.0, stroke_opacity=TREE_OPACITY)
+                used = False
                 for (m, c, x0, y0, x1, y1, ev) in segs:
                     if ev != even:
                         continue
                     p0, p1 = T(x0, y0), T(x1, y1)
                     vm.start_new_path(np.array([p0[0], p0[1], 0.0]))
                     vm.add_line_to(np.array([p1[0], p1[1], 0.0]))
-                    first = False
-                if not first:
-                    tree_layers.add(vm)
-        # (los pares de capas par/impar de cada profundidad se animan juntos: son 2 elementos consecutivos)
-        by_depth = []
-        k = 0
-        for segs in layers:
-            n_el = (1 if any(sg[6] for sg in segs) else 0) + (1 if any(not sg[6] for sg in segs) else 0)
-            by_depth.append(tree_layers[k:k + n_el])
-            k += n_el
-        root = Dot(np.array([TREE_CX + T(0, 0)[0], T(0, 0)[1], 0]), radius=0.09, color=WHITE).set_z_index(5)
-        root_lab = Text("1", font_size=34, color=WHITE).next_to(root, DOWN, buff=0.2)
-        self.play(FadeIn(root), FadeIn(root_lab), run_time=0.8)
-        self.play(LaggedStart(*[AnimationGroup(*[Create(m) for m in grp]) for grp in by_depth],
-                              lag_ratio=0.35), run_time=11.0)
-        self.wait(1.0)
+                    used = True
+                if used:
+                    grp.append(vm)
+            by_depth.append(grp)
 
-        # el camino del 6 dentro del árbol
-        path_nums = list(reversed(chain))                      # 1, 2, 4, 8, 16, 5, 10, 3, 6
-        path_pts = [np.array([T(*pos[n])[0], T(*pos[n])[1], 0.0]) for n in path_nums]
-        path = VMobject(color=WHITE, stroke_width=6).set_points_as_corners(path_pts).set_z_index(4)
-        six = Dot(path_pts[-1], radius=0.11, color=WHITE).set_z_index(5)
-        six_lab = Text("6", font_size=38, color=WHITE).next_to(six, UP, buff=0.18).set_z_index(5)
-        self.play(Create(path), run_time=2.4)
-        self.play(FadeIn(six), FadeIn(six_lab), run_time=0.6)
-        self.wait(1.4)
-
-        # =============================================================
-        # 4. LA CONJETURA
-        # =============================================================
-        self.play(tree_layers.animate.set_opacity(0.18), path.animate.set_opacity(0.3),
-                  FadeOut(Group(six, six_lab)), run_time=1.2)
-        title = Text("Conjetura\nde Collatz", font_size=64, line_spacing=0.9, color=WHITE).move_to(np.array([0, 2.7, 0]))
-        self.play(FadeIn(title, shift=0.3 * UP), run_time=1.2)
-        self.wait(2.0)
-        comp_a = Text("Comprobada hasta\nmás de", font_size=40, line_spacing=0.9, color=WHITE)
-        comp_b = MathTex(r"10^{20}", font_size=110, color=C_ODD)
-        comp = VGroup(comp_a, comp_b).arrange(DOWN, buff=0.3).move_to(np.array([0, 0.1, 0]))
-        self.play(FadeIn(comp, shift=0.2 * UP), run_time=1.2)
-        self.wait(3.2)
-        dem = Text("Demostrada:\nnadie todavía", font_size=48, line_spacing=0.9, color=C_EVEN).move_to(np.array([0, -2.5, 0]))
-        self.play(FadeIn(dem, shift=0.2 * UP), run_time=1.2)
-        self.wait(4.0)
+        title = fit(Text("Conjetura\nde Collatz", font_size=84, line_spacing=0.9, color=WHITE).set_z_index(10), 5.2)
+        title.move_to(np.array([0, 2.3, 0]))
+        statement = fit(Text("Todo número positivo\nacaba llegando a 1", font_size=50, line_spacing=0.95,
+                             color=WHITE).set_z_index(10), 5.2)
+        statement.move_to(np.array([0, -0.6, 0]))
+        grow = LaggedStart(*[AnimationGroup(*[Create(m) for m in grp]) for grp in by_depth],
+                           lag_ratio=0.35, run_time=9.0)
+        self.play(FadeIn(title, shift=0.3 * UP, run_time=1.4), grow,
+                  Succession(Wait(3.0), FadeIn(statement, shift=0.2 * UP, run_time=1.2)))
+        self.wait(3.0)
+        if SHOW_FACTS:
+            self.play(FadeOut(statement), run_time=0.8)
+            comp_a = Text("Comprobada hasta\nmás de", font_size=40, line_spacing=0.9, color=WHITE).set_z_index(10)
+            comp_b = MathTex(r"10^{20}", font_size=110, color=C_ODD).set_z_index(10)
+            comp = VGroup(comp_a, comp_b).arrange(DOWN, buff=0.3).move_to(np.array([0, 0.0, 0]))
+            self.play(FadeIn(comp, shift=0.2 * UP), run_time=1.2)
+            self.wait(3.0)
+            dem = fit(Text("Demostrada:\nnadie todavía", font_size=48, line_spacing=0.9,
+                           color=C_EVEN).set_z_index(10), 5.2).move_to(np.array([0, -2.5, 0]))
+            self.play(FadeIn(dem, shift=0.2 * UP), run_time=1.2)
+            self.wait(3.5)
+        else:
+            self.wait(2.0)
 
         # =============================================================
         # 5. CIERRE Y LOGO
