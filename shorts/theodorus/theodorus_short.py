@@ -2,7 +2,9 @@ from manim import *
 import numpy as np
 
 # ---------------------------------------------------------------
-# ESPIRAL DE TEODORO (sin título, sin voz): empieza directamente con dos catetos de longitud 1
+# ESPIRAL DE TEODORO (sin voz): empieza directamente con dos catetos de longitud 1,
+# la espiral sigue creciendo (y la cámara se aleja) para sugerir que no termina nunca,
+# aparece el título y, al final, el logo.
 # FORMATO: cuadro vertical 9:16 (1080x1920)
 # Render: manim -qh --fps 60 theodorus_short.py TheodorusShort
 # ---------------------------------------------------------------
@@ -15,17 +17,19 @@ if PORTRAIT:
 
 
 # ===============================================================
-# GEOMETRÍA (numpy puro; se puede probar sin Manim)
+# GEOMETRÍA Y TIEMPOS (numpy puro; se puede probar sin Manim)
 # ===============================================================
 # BEGIN-GEOM
-N_TRI = 16                 # 16 triángulos: la espiral llega a √17 y aún no se solapa consigo misma
+N_TRI = 16                 # los 16 primeros triángulos (hasta √17) se construyen despacio y con etiquetas
+N_END = 100                # la espiral sigue hasta el triángulo 100 (cada vez más rápido)
+SLOW = 1.6                 # factor de lentitud de los primeros 16 pasos (tiempo para hablar)
 FW_MIN = 3.2               # ancho del cuadro al empezar (el primer triángulo se ve grande)
-FILL = 0.96                # fracción del cuadro que puede ocupar la figura (el margen de etiquetas ya va aparte)
+FILL = 0.96                # fracción del cuadro que puede ocupar la figura (el margen de etiquetas va aparte)
 LABEL_OFF = 0.32           # separación de la etiqueta (en unidades de pantalla)
 UP_SHIFT = 0.02            # ligero desplazamiento hacia arriba (zona segura inferior)
 
 
-def theodorus_points(n=N_TRI):
+def theodorus_points(n=N_END):
     """z[0] = O, z[1] = 1; cada nuevo punto está a distancia 1 del anterior y a 90° de la
     hipotenusa previa:  z[k+1] = z[k] + i·z[k]/|z[k]|   ->   |z[k]| = sqrt(k).
     El triángulo k tiene vértices O, z[k], z[k+1] (ángulo recto en z[k])."""
@@ -47,6 +51,23 @@ def camera_target(z, k):
     fh = fw * 16 / 9
     cx, cy = (x0 + x1) / 2, (y0 + y1) / 2 - UP_SHIFT * fh
     return fw, complex(cx, cy)
+
+
+def step_times(k):
+    """Tiempos (nuevo cateto, hipotenusa+relleno+cámara) del triángulo k = 2..16."""
+    return SLOW * max(0.32, 0.95 - 0.07 * k), SLOW * max(0.5, 1.15 - 0.07 * k)
+
+
+def tail_time(k):
+    """Duración del paso k > 16: empieza a 0.5 s y se acelera hasta 0.04 s (≈ 2-3 fotogramas)."""
+    return max(0.04, 0.5 * 0.93 ** (k - 17))
+
+
+def color_index(k, n=N_TRI):
+    """Índice de color del triángulo k: recorre la paleta de ida y vuelta (sin saltos)."""
+    period = 2 * (n - 1)
+    j = (k - 1) % period
+    return j if j < n else period - j
 # END-GEOM
 
 
@@ -97,8 +118,12 @@ class TheodorusShort(MovingCameraScene):
             return Line(P(a), P(b), color=COLOR_LINE, stroke_width=w).set_z_index(2)
 
         def tri_poly(k):
-            return Polygon(P(0), P(k), P(k + 1), fill_color=PAL[k - 1], fill_opacity=0.8,
-                           stroke_width=0).set_z_index(0)
+            if k <= N_TRI:
+                op, zi = 0.8, 0
+            else:                                   # los triángulos de la 2.ª vuelta quedan DETRÁS de los anteriores
+                op, zi = 0.7, -(k - N_TRI)
+            return Polygon(P(0), P(k), P(k + 1), fill_color=PAL[color_index(k)], fill_opacity=op,
+                           stroke_width=0).set_z_index(zi)
 
         polys, labels, ones = [], [], []
 
@@ -111,21 +136,21 @@ class TheodorusShort(MovingCameraScene):
         la = make_label("1", (P(0) + P(1)) / 2, (0, -1, 0))
         lb = make_label("1", (P(1) + P(2)) / 2, (1, 0, 0))
         ones += [la, lb]
-        self.play(Create(leg_a), FadeIn(la), run_time=0.9)
-        self.play(Create(leg_b), FadeIn(lb), run_time=0.9)
-        self.play(FadeIn(right_angle(1)), run_time=0.4)
+        self.play(Create(leg_a), FadeIn(la), run_time=1.4)
+        self.play(Create(leg_b), FadeIn(lb), run_time=1.4)
+        self.play(FadeIn(right_angle(1)), run_time=0.7)
         l2 = make_label(r"\sqrt{2}", P(2), P(2))
         polys.append(tri_poly(1))
         labels.append(l2)
-        self.play(Create(hyp), FadeIn(l2), run_time=1.0)
-        self.play(FadeIn(polys[0]), run_time=0.6)
+        self.play(Create(hyp), FadeIn(l2), run_time=1.6)
+        self.play(FadeIn(polys[0]), run_time=1.0)
+        self.wait(0.5)
 
         # =============================================================
-        # TRIÁNGULOS 2..N: nuevo cateto de longitud 1, perpendicular a la hipotenusa anterior
+        # TRIÁNGULOS 2..16: nuevo cateto de longitud 1, perpendicular a la hipotenusa anterior (lento)
         # =============================================================
         for k in range(2, N_TRI + 1):
-            a = max(0.32, 0.95 - 0.07 * k)
-            b = max(0.5, 1.15 - 0.07 * k)
+            a, b = step_times(k)
             leg = line(k, k + 1)
             hyp = line(0, k + 1)
             poly = tri_poly(k)
@@ -139,21 +164,47 @@ class TheodorusShort(MovingCameraScene):
                 anims += [FadeOut(la), FadeOut(lb)]     # los "1" iniciales ya cumplieron su función
             self.play(Create(leg), FadeIn(right_angle(k)), run_time=a)
             self.play(*anims, run_time=b)
+        self.wait(0.8)
 
         # =============================================================
-        # REMATE: una ola de brillo recorre la espiral
+        # LA ESPIRAL SIGUE... Y SIGUE: pasos cada vez más rápidos, la cámara se aleja sin parar
         # =============================================================
-        self.wait(0.4)
-        self.play(LaggedStart(*[Indicate(p, scale_factor=1.12, color=WHITE) for p in polys],
-                              lag_ratio=0.09), run_time=2.4)
-        self.wait(0.8)
+        for k in range(N_TRI + 1, N_END + 1):
+            rt = tail_time(k)
+            w = 1.8 if k <= 50 else 1.1
+            leg, hyp, poly = line(k, k + 1, w), line(0, k + 1, w), tri_poly(k)
+            polys.append(poly)
+            fw, c = camera_target(z, k)
+            anims = [Create(leg), Create(hyp), FadeIn(poly),
+                     cam.animate.set(width=fw).move_to(np.array([c.real, c.imag, 0.0]))]
+            i0 = 2 * (k - N_TRI - 1)                    # las etiquetas se van apagando de dos en dos
+            if i0 < len(labels):
+                anims += [FadeOut(m) for m in labels[i0:i0 + 2]]
+            self.play(*anims, run_time=rt, rate_func=linear)
+        self.wait(0.6)
+
+        # =============================================================
+        # TÍTULO (tamaño y posición fijos en pantalla, aunque la cámara esté muy alejada)
+        # =============================================================
+        title = Text("Espiral de\nTeodoro", font_size=64, line_spacing=0.9, color=WHITE).set_z_index(20)
+        t_h0 = title.height
+
+        def title_upd(m):
+            s = frame_scale()
+            m.set_height(t_h0 * s)
+            m.move_to(cam.get_center() + np.array([0.0, 3.95 * s, 0.0]))
+        title.add_updater(title_upd)
+        title_upd(title)
+        self.play(FadeIn(title, shift=0.3 * UP), run_time=1.5)
+        self.wait(3.5)
 
         # =============================================================
         # CIERRE Y LOGO
         # =============================================================
+        title.clear_updaters()
         for m in labels + ones:
             m.clear_updaters()
-        self.play(FadeOut(Group(*self.mobjects)), run_time=1.0)
+        self.play(FadeOut(Group(*self.mobjects)), run_time=1.2)
         cam.set(width=config.frame_width).move_to(ORIGIN)
         logo = MathTex(r"F_{GC}", font_size=150, color=COLOR_LOGO).move_to(ORIGIN)
         self.play(FadeIn(logo, scale=0.7), run_time=1.2)
