@@ -247,7 +247,7 @@ class CollatzShort(Scene):
         lab_now = always_redraw(cur_label)
         self.add(trail, dot, lab_now, peak_lab)
         self.play(tr.animate.set_value(V), run_time=15.0, rate_func=linear)
-        steps_lab = Text("111 pasos", font_size=38, color=WHITE).move_to(np.array([1.0, Y_BOT, 0]))
+        steps_lab = Text("¡111 pasos!", font_size=38, color=WHITE).move_to(np.array([1.0, Y_BOT, 0]))
         self.play(FadeIn(steps_lab, shift=0.2 * UP), run_time=1.0)
         self.wait(2.5)
         for m in (trail, dot, lab_now, peak_lab):
